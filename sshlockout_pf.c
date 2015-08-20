@@ -179,11 +179,18 @@ main(int argc, char *argv[])
 	pthread_t GC;
 	int attempts;
 
+//(int)strtol(nptr, (char **)NULL, 10);
 	if (argc != 2) {
+		fprintf(stderr, "Usage: %s attempts\n", argv[0]);
+		fprintf(stderr, "\tattempts: Invalid attempts count. A numeric value from 1-9999n");
+		exit(3);
+	}
+	
+	attempts = (int)strtol(argv[1], (char **)NULL, 10);
+	if ( (attempts < 1) || (attempts > 9999) ) {
 		fprintf(stderr, "Invalid attempts count %d.  Use a numeric value from 1-9999\n", attempts);
 		exit(3);
 	}
-	attempts = atoi(argv[1]);
 
 	// Set MAXATTEMPTS to the first argv argument
 	MAXATTEMPTS = attempts;
