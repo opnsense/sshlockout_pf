@@ -72,7 +72,7 @@
 static int dev = -1;
 
 // Allow overriding
-int MAXATTEMPTS = 15;
+static int MAXATTEMPTS = 15;
 
 // Wall of shame (invalid login DB)
 struct sshlog 
@@ -90,27 +90,26 @@ struct sshlog
 	int inactive;
 };
 
-pthread_rwlock_t db_lock;
+static pthread_rwlock_t db_lock;
 #define LOCK_INIT    pthread_rwlock_init(&db_lock, NULL)
 #define RLOCK        pthread_rwlock_rdlock(&db_lock)
 #define UNLOCK       pthread_rwlock_unlock(&db_lock)
 #define WLOCK        pthread_rwlock_wrlock(&db_lock)
 
-TAILQ_HEAD(, sshlog) lockouts;
+static TAILQ_HEAD(, sshlog) lockouts;
 
 enum action {
 	RELEASE,
 	BLOCK,
 };
 
-// Function declarations
-static void doaction(char *, char *, enum action);
-static int check_for_string(char *, char *, char *buf, enum action);
+static void doaction(const char *, const char *, enum action);
+static int check_for_string(const char *, const char *, char *, enum action);
 static void *prune_24hour_records(void *);
-static void pf_tableentry(char *, int, int, int, int);
+static void pf_tableentry(const char *, int, int, int, int);
 
 static void
-pf_tableentry(char *tablename, int n1, int n2, int n3, int n4)
+pf_tableentry(const char *tablename, int n1, int n2, int n3, int n4)
 {
 	struct pfioc_table io;
 	struct pfr_table table;
@@ -279,24 +278,27 @@ main(int argc, char *argv[])
 }
 
 static int
-check_for_string(char *str, char *lockouttable, char *buf, enum action act)
+check_for_string(const char *str, const char *lockouttable, char *buf,
+    enum action act)
 {
-	char *tmpstr = NULL;
+	const char *tmpstr = NULL;
+	int ret = 0;
 
-	if ((str = strstr(buf, str)) != NULL) 
-	{
+	if ((str = strstr(buf, str)) != NULL) {
 		if ((tmpstr = strstr(str, " from")) != NULL) {
-			if (strlen(tmpstr) > 5)
+			if (strlen(tmpstr) > 5) {
 				doaction(tmpstr + 5, lockouttable, act);
+			}
 		}
-		return (1);
+
+		ret = 1;
 	}
 
-	return (0);
+	return (ret);
 }
 
 static void
-doaction(char *str, char *lockouttable, enum action act)
+doaction(const char *str, const char *lockouttable, enum action act)
 {
 	struct sshlog *sshlog;
 	// IP address octets
